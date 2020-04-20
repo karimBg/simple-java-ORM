@@ -1,9 +1,10 @@
+package Main;
+
 import model.Person;
 import util.ColumnField;
 import util.Metamodel;
 import util.PrimaryKeyField;
 
-import java.lang.reflect.Field;
 import java.util.List;
 
 public class MetamodelTest {

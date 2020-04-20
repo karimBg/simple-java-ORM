@@ -6,16 +6,18 @@ import annotations.PrimaryKey;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-public class Metamodel<T> {
+public class Metamodel {
 
-    private Class<T> clss;
+    private Class<?> clss;
 
-    public Metamodel(Class<T> clss) {
+    public Metamodel(Class<?> clss) {
         this.clss = clss;
     }
 
-    public static <T> Metamodel<T> of(Class<T> clss) {
+    public static Metamodel of(Class<?> clss) {
         return new Metamodel(clss);
     }
 
@@ -47,4 +49,36 @@ public class Metamodel<T> {
         // if no column fields where found the returned list will be empty
         return columnFieldList;
     }
+
+    // INSERT INTO person (id, name, age) VALUES (?, ?, ?);
+    public String buildInsertRequest() {
+
+        // build the first part of the sql request: id, name, age
+        String columnElements = buildColumnNames();
+
+        // build the second part: ?, ?, ?
+        String questionMarkElement = buildQuestionMarksElement();
+
+        return "INSRT INTO " + this.clss.getSimpleName() +
+                " (" + columnElements + ") VALUES " + " (" + questionMarkElement + ")";
+    }
+
+    private String buildColumnNames() {
+        String primaryKeyColumnName = getPrimaryKey().getName();
+        List<String> columnNames = getColums()
+                .stream()
+                .map(ColumnField::getName)
+                .collect(Collectors.toList());
+        columnNames.add(0, primaryKeyColumnName);
+        return String.join(", ", columnNames);
+    }
+
+    private String buildQuestionMarksElement() {
+        int numberOfColumns = getColums().size() + 1;
+        return IntStream
+                .range(0, numberOfColumns)
+                .mapToObj(index -> "?")
+                .collect(Collectors.joining(", "));
+    }
+
 }
