@@ -9,7 +9,12 @@
     <version>1.0-SNAPSHOT</version>
 
     <dependencies>
-
+        <!-- https://mvnrepository.com/artifact/com.h2database/h2 -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>1.4.190</version>
+        </dependency>
     </dependencies>
 
 
