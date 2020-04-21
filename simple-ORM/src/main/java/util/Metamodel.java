@@ -63,6 +63,13 @@ public class Metamodel {
                 " (" + columnElements + ") VALUES " + " (" + questionMarkElement + ")";
     }
 
+    // SELECT (id, name, age) FROM person WHERE id = ?;
+    public String buildSelectRequest() {
+        String columnElements = buildColumnNames();
+        return "SELECT " + columnElements + " FROM " + this.clss.getSimpleName() +
+                " WHERE " + getPrimaryKey().getName() + " = ?;";
+    }
+
     private String buildColumnNames() {
         String primaryKeyColumnName = getPrimaryKey().getName();
         List<String> columnNames = getColums()
@@ -80,5 +87,4 @@ public class Metamodel {
                 .mapToObj(index -> "?")
                 .collect(Collectors.joining(", "));
     }
-
 }

@@ -2,14 +2,10 @@ package orm;
 
 import util.ColumnField;
 import util.Metamodel;
-import util.PrimaryKeyField;
 
 import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.List;
+import java.lang.reflect.InvocationTargetException;
+import java.sql.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class EntityMangerImpl<T> implements EntityManager<T> {
@@ -23,6 +19,15 @@ public class EntityMangerImpl<T> implements EntityManager<T> {
         statement.executeUpdate();
     }
 
+    @Override
+    public T find(Class<T> clss, Object primaryKey) throws SQLException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        Metamodel metamodel = Metamodel.of(clss);
+        String sql = metamodel.buildSelectRequest();
+        PreparedStatement statement = prepareStatementWith(sql).andPrimaryKey(primaryKey);
+        ResultSet resultSet = statement.executeQuery();
+        return buildInstanceFrom(clss, resultSet);
+    }
+
     private PreparedStatementWrapper prepareStatementWith(String sql) throws SQLException {
         // Specif H2 information to connect to the H2 DB.
         String username = "";
@@ -31,6 +36,48 @@ public class EntityMangerImpl<T> implements EntityManager<T> {
         Connection connection = DriverManager.getConnection(url, username, password);
         PreparedStatement statement = connection.prepareStatement(sql);
         return new PreparedStatementWrapper(statement);
+    }
+
+    private T buildInstanceFrom(Class<T> clss, ResultSet resultSet) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, SQLException {
+        Metamodel metamodel = Metamodel.of(clss);
+
+        // Build an instance of type clss
+        T t = clss.getConstructor().newInstance();
+
+        // Populate the primaryKey field
+        Field primaryKeyField = metamodel.getPrimaryKey().getField();
+        String primaryKeyFieldName = metamodel.getPrimaryKey().getName();
+        Class<?> primaryKeyFieldType = metamodel.getPrimaryKey().getType();
+
+        // Tell the resultSet to advance on the table of results
+        resultSet.next();
+
+        if(primaryKeyFieldType == long.class) {
+            // Inside the DB the Primary Key was stored as an Int
+            int primaryKeyValue = resultSet.getInt(primaryKeyFieldName);
+
+            // Populate the instance with the value of the primaryKey
+            primaryKeyField.setAccessible(true);
+            primaryKeyField.set(t, primaryKeyValue);
+        }
+
+        // Populate the rest of the fields
+        for(ColumnField columnField: metamodel.getColums()) {
+            Field field = columnField.getField();
+            String columnFieldName = columnField.getName();
+            Class<?> columnFiedType = columnField.getType();
+
+            field.setAccessible(true);
+
+            if(columnFiedType == int.class) {
+                int columnValue = resultSet.getInt(columnFieldName);
+                field.set(t, columnValue);
+            } else if(columnFiedType == String.class) {
+                String columnValue = resultSet.getString(columnFieldName);
+                field.set(t, columnValue);
+            }
+        }
+        return t;
     }
 
     private class PreparedStatementWrapper {
@@ -75,6 +122,15 @@ public class EntityMangerImpl<T> implements EntityManager<T> {
                 } else if(fieldType == String.class) {
                     statement.setString(columnIndex + 2, (String)fieldValue);
                 }
+            }
+            return statement;
+        }
+
+        // Provide a value for the Primary key to be used by the WHERE clause of the SELECT query
+        public PreparedStatement andPrimaryKey(Object primaryKey) throws SQLException {
+            // We will only care about the long type
+            if(primaryKey.getClass() == Long.class) {
+                statement.setLong(1, (Long)primaryKey);
             }
             return statement;
         }
