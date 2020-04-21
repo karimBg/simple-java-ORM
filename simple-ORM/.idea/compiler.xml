@@ -7,6 +7,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="simple-java-ORM" />
+        <module name="simple-ORM" />
       </profile>
     </annotationProcessing>
   </component>

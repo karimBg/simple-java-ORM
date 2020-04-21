@@ -17,4 +17,12 @@ public class PrimaryKeyField {
     public Class<?> getType() {
         return field.getType();
     }
+
+    public Field getField() {
+        return this.field;
+    }
+
+    public void setField(Field field) {
+        this.field = field;
+    }
 }

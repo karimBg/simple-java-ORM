@@ -59,7 +59,7 @@ public class Metamodel {
         // build the second part: ?, ?, ?
         String questionMarkElement = buildQuestionMarksElement();
 
-        return "INSRT INTO " + this.clss.getSimpleName() +
+        return "INSERT INTO " + this.clss.getSimpleName() +
                 " (" + columnElements + ") VALUES " + " (" + questionMarkElement + ")";
     }
 
