@@ -5,13 +5,13 @@ import annotations.PrimaryKey;
 
 public class Person {
 
-    @PrimaryKey
+    @PrimaryKey(name = "k_id")
     private long Id;
 
-    @Column
+    @Column(name = "c_name")
     private String name;
 
-    @Column
+    @Column(name = "c_age")
     private int age;
 
     public Person() {}
