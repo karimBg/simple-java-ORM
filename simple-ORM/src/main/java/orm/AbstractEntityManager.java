@@ -44,6 +44,15 @@ public abstract class AbstractEntityManager<T> implements EntityManager<T> {
         }
     }
 
+    @Override
+    public void update(T t) throws SQLException, IllegalAccessException {
+        Metamodel metamodel = Metamodel.of(t.getClass());
+        String sql = metamodel.buildUpdateRequest();
+        try(PreparedStatement statement = prepareStatementWith(sql).andUpdateParameters(t)) {
+            statement.executeUpdate();
+        }
+    }
+
     private PreparedStatementWrapper prepareStatementWith(String sql) throws SQLException {
         // Specif H2 information to connect to the H2 DB.
         Connection connection = buildConnection();
@@ -121,24 +130,7 @@ public abstract class AbstractEntityManager<T> implements EntityManager<T> {
             }
 
             // Handle the rest of the fields
-            for(int columnIndex = 0; columnIndex < metamodel.getColums().size(); columnIndex++) {
-                // Get the columnField by it's index number
-                ColumnField columnField = metamodel.getColums().get(columnIndex);
-                // Get the field type
-                Class<?> fieldType = columnField.getType();
-                // Get the field value
-                Field field = columnField.getField();
-                // Set the field as accessible because it will most likely be private
-                field.setAccessible(true);
-                // Get the field value
-                Object fieldValue = field.get(t);
-                // set the value to the request depending on the field type, we only care about the String and int types
-                if(fieldType == int.class) {
-                    statement.setInt(columnIndex + 2, (int)fieldValue);
-                } else if(fieldType == String.class) {
-                    statement.setString(columnIndex + 2, (String)fieldValue);
-                }
-            }
+            updateColumnFields(t, metamodel);
             return statement;
         }
 
@@ -164,6 +156,52 @@ public abstract class AbstractEntityManager<T> implements EntityManager<T> {
                 statement.setLong(1, (long)primaryKeyValue);
             }
             return statement;
+        }
+
+        // We need to provide a value for each parameter: id, name, age
+        public PreparedStatement andUpdateParameters(T t) throws SQLException, IllegalAccessException {
+            Metamodel metamodel = Metamodel.of(t.getClass());
+            Class<?> primaryKeyType = metamodel.getPrimaryKey().getType();
+            Field primaryKeyField = metamodel.getPrimaryKey().getField();
+            primaryKeyField.setAccessible(true);
+            // In this project we will deal with only primaryKey of type: long
+            if(primaryKeyType == long.class) {
+                long primaryKeyValue = (long)primaryKeyField.get(t);
+                statement.setLong(1, primaryKeyValue);
+                primaryKeyField.setAccessible(true);
+                primaryKeyField.set(t, primaryKeyValue);
+            }
+
+            // Handle the rest of the fields
+            updateColumnFields(t, metamodel);
+
+            // Handle the Update Condition
+            if(primaryKeyType == long.class) {
+                long primaryKeyValue = (long)primaryKeyField.get(t);
+                statement.setLong(metamodel.getColums().size() + 2, primaryKeyValue);
+            }
+            return statement;
+        }
+
+        private void updateColumnFields(T t, Metamodel metamodel) throws IllegalAccessException, SQLException {
+            for(int columnIndex = 0; columnIndex < metamodel.getColums().size(); columnIndex++) {
+                // Get the columnField by it's index number
+                ColumnField columnField = metamodel.getColums().get(columnIndex);
+                // Get the field type
+                Class<?> fieldType = columnField.getType();
+                // Get the field value
+                Field field = columnField.getField();
+                // Set the field as accessible because it will most likely be private
+                field.setAccessible(true);
+                // Get the field value
+                Object fieldValue = field.get(t);
+                // set the value to the request depending on the field type, we only care about the String and int types
+                if(fieldType == int.class) {
+                    statement.setInt(columnIndex + 2, (int)fieldValue);
+                } else if(fieldType == String.class) {
+                    statement.setString(columnIndex + 2, (String)fieldValue);
+                }
+            }
         }
     }
 }

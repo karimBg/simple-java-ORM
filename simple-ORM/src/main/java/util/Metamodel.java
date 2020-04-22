@@ -75,6 +75,13 @@ public class Metamodel {
         return "DELETE FROM " + this.clss.getSimpleName() + " WHERE " + getPrimaryKey().getName() + " = ?;";
     }
 
+    // UPDATE person SET id = ?, name = ?, age = ? WHERE id = ?;
+    public String buildUpdateRequest() {
+        String columnElementsWithQuestionMarks = buildColumnNamesWithQuestionMarks();
+        return "UPDATE " + clss.getSimpleName() + " SET " + columnElementsWithQuestionMarks + " = ? WHERE "
+                + getPrimaryKey().getName() + " = ?;";
+    }
+
     private String buildColumnNames() {
         String primaryKeyColumnName = getPrimaryKey().getName();
         List<String> columnNames = getColums()
@@ -91,5 +98,15 @@ public class Metamodel {
                 .range(0, numberOfColumns)
                 .mapToObj(index -> "?")
                 .collect(Collectors.joining(", "));
+    }
+
+    private String buildColumnNamesWithQuestionMarks() {
+        String primaryKeyColumnName = getPrimaryKey().getName();
+        List<String> columnNames = getColums()
+                .stream()
+                .map(ColumnField::getName)
+                .collect(Collectors.toList());
+        columnNames.add(0, primaryKeyColumnName);
+        return String.join(" = ?, ", columnNames);
     }
 }

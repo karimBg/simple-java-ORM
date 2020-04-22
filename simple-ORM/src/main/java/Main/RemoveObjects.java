@@ -6,7 +6,7 @@ import orm.EntityManager;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
 
-public class RemoveObject {
+public class RemoveObjects {
 
     public static void main(String[] args) throws SQLException, IllegalAccessException, NoSuchMethodException, InstantiationException, InvocationTargetException {
 
