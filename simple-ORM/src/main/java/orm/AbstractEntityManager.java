@@ -8,9 +8,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class EntityMangerImpl<T> implements EntityManager<T> {
+public abstract class AbstractEntityManager<T> implements EntityManager<T> {
 
     private AtomicLong idGenerator = new AtomicLong(0L);
+
+    public abstract Connection buildConnection() throws SQLException;
 
     public void persist(T t) throws SQLException, IllegalAccessException {
         Metamodel metamodel = Metamodel.of(t.getClass());
@@ -30,10 +32,7 @@ public class EntityMangerImpl<T> implements EntityManager<T> {
 
     private PreparedStatementWrapper prepareStatementWith(String sql) throws SQLException {
         // Specif H2 information to connect to the H2 DB.
-        String username = "";
-        String password = "";
-        String url = "jdbc:h2:C:\\Users\\mkboughammoura\\Desktop\\orm-project\\simple-java-ORM\\simple-ORM\\db-files\\db-orm";
-        Connection connection = DriverManager.getConnection(url, username, password);
+        Connection connection = buildConnection();
         PreparedStatement statement = connection.prepareStatement(sql);
         return new PreparedStatementWrapper(statement);
     }
