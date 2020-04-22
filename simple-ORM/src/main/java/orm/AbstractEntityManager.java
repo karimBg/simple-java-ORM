@@ -2,6 +2,7 @@ package orm;
 
 import util.ColumnField;
 import util.Metamodel;
+import util.PrimaryKeyField;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -33,6 +34,16 @@ public abstract class AbstractEntityManager<T> implements EntityManager<T> {
         }
     }
 
+    @Override
+    public void remove(T t) throws SQLException, IllegalAccessException {
+        Metamodel metamodel = Metamodel.of(t.getClass());
+        String sql = metamodel.buildDeleteRequest();
+        // We will use the primaryKey as our condition to remove a row from the DB
+        try(PreparedStatement statement = prepareStatementWith(sql).andCondition(t)) {
+            statement.executeUpdate();
+        }
+    }
+
     private PreparedStatementWrapper prepareStatementWith(String sql) throws SQLException {
         // Specif H2 information to connect to the H2 DB.
         Connection connection = buildConnection();
@@ -52,7 +63,10 @@ public abstract class AbstractEntityManager<T> implements EntityManager<T> {
         Class<?> primaryKeyFieldType = metamodel.getPrimaryKey().getType();
 
         // Tell the resultSet to advance on the table of results
-        resultSet.next();
+        boolean next = resultSet.next();
+        if(!next) {
+            throw new IllegalArgumentException("No Row exists inside the table: " + clss.getSimpleName());
+        }
 
         if(primaryKeyFieldType == long.class) {
             // Inside the DB the Primary Key was stored as an Int
@@ -133,6 +147,21 @@ public abstract class AbstractEntityManager<T> implements EntityManager<T> {
             // We will only care about the long type
             if(primaryKey.getClass() == Long.class) {
                 statement.setLong(1, (Long)primaryKey);
+            }
+            return statement;
+        }
+
+        public PreparedStatement andCondition(T t) throws IllegalAccessException, SQLException {
+            Metamodel metamodel = Metamodel.of(t.getClass());
+
+            Field primaryKeyField = metamodel.getPrimaryKey().getField();
+            Class<?> primaryKeyType = primaryKeyField.getType();
+            primaryKeyField.setAccessible(true);
+            Object primaryKeyValue = primaryKeyField.get(t);
+
+            // as always we only care about the long data type for the primaryKey field
+            if(primaryKeyType == long.class) {
+                statement.setLong(1, (long)primaryKeyValue);
             }
             return statement;
         }

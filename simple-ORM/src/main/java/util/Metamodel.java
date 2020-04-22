@@ -70,6 +70,11 @@ public class Metamodel {
                 " WHERE " + getPrimaryKey().getName() + " = ?;";
     }
 
+    // DELETE FROM person WHERE id = ?;
+    public String buildDeleteRequest() {
+        return "DELETE FROM " + this.clss.getSimpleName() + " WHERE " + getPrimaryKey().getName() + " = ?;";
+    }
+
     private String buildColumnNames() {
         String primaryKeyColumnName = getPrimaryKey().getName();
         List<String> columnNames = getColums()
