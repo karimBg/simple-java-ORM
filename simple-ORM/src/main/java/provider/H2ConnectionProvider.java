@@ -1,11 +1,15 @@
-package orm;
+package provider;
+
+import annotations.Provides;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class H2EntityManager<T> extends AbstractEntityManager<T> {
+public class H2ConnectionProvider {
 
+    // To tell the system that this is the method that we should call to create a connection insctance
+    @Provides
     public Connection buildConnection() throws SQLException {
         String username = "";
         String password = "";

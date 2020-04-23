@@ -1,19 +1,21 @@
 package orm;
 
+import annotations.Inject;
 import util.ColumnField;
 import util.Metamodel;
-import util.PrimaryKeyField;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-public abstract class AbstractEntityManager<T> implements EntityManager<T> {
+public class ManagedEntityManager<T> implements EntityManager<T> {
 
     private AtomicLong idGenerator = new AtomicLong(0L);
 
-    public abstract Connection buildConnection() throws SQLException;
+    // We will create a mechanism that will automatically inject the connection value into this class
+    @Inject
+    private Connection connection;
 
     @Override
     public void persist(T t) throws SQLException, IllegalAccessException {
@@ -54,8 +56,6 @@ public abstract class AbstractEntityManager<T> implements EntityManager<T> {
     }
 
     private PreparedStatementWrapper prepareStatementWith(String sql) throws SQLException {
-        // Specif H2 information to connect to the H2 DB.
-        Connection connection = buildConnection();
         PreparedStatement statement = connection.prepareStatement(sql);
         return new PreparedStatementWrapper(statement);
     }
